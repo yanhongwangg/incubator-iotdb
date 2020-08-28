@@ -19,7 +19,6 @@
 package org.apache.iotdb.tsfile.write.record;
 
 import static org.apache.iotdb.tsfile.file.metadata.enums.TSDataType.*;
-
 import java.util.List;
 import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;

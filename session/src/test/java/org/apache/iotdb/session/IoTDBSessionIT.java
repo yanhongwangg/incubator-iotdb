@@ -1159,15 +1159,6 @@ public class IoTDBSessionIT {
       session.insertTablet(tablet);
       tablet.reset();
     }
-    SessionDataSet dataSet;
-    dataSet = session.executeQueryStatement("select * from root.sg1.d1");
-    System.out.println(dataSet.getColumnNames());
-    dataSet.setFetchSize(1024); // default is 10000
-    while (dataSet.hasNext()) {
-      System.out.println(dataSet.next());
-    }
-
-    dataSet.closeOperationHandle();
 
   }
 

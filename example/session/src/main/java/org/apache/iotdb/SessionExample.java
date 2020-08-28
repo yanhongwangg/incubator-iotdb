@@ -47,9 +47,8 @@ public class SessionExample {
     try {
       session.setStorageGroup("root.sg1");
     } catch (StatementExecutionException e) {
-      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode()) {
+      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode())
         throw e;
-      }
     }
     createTimeseries();
     createMultiTimeseries();
@@ -153,8 +152,7 @@ public class SessionExample {
     }
   }
 
-  private static void insertStrRecord()
-      throws IoTDBConnectionException, StatementExecutionException {
+  private static void insertStrRecord() throws IoTDBConnectionException, StatementExecutionException {
     String deviceId = "root.sg1.d1";
     List<String> measurements = new ArrayList<>();
     measurements.add("s1");
@@ -225,14 +223,17 @@ public class SessionExample {
 
     session.insertRecords(deviceIds, timestamps, measurementsList, typesList, valuesList);
   }
-
   /**
    * insert the data of a device. For each timestamp, the number of measurements is the same.
-   * <p>
+   *
    * a Tablet example:
-   * <p>
-   * device1 time s1, s2, s3 1,   1,  1,  1 2,   2,  2,  2 3,   3,  3,  3
-   * <p>
+   *
+   *      device1
+   * time s1, s2, s3
+   * 1,   1,  1,  1
+   * 2,   2,  2,  2
+   * 3,   3,  3,  3
+   *
    * Users need to control the count of Tablet and write a batch when it reaches the maxBatchSize
    */
   private static void insertTablet() throws IoTDBConnectionException, StatementExecutionException {
@@ -245,11 +246,11 @@ public class SessionExample {
 
     Tablet tablet = new Tablet("root.sg1.d1", schemaList, 100);
 
-    for (long time = 0; time < 100; time++) {
-      int rowIndex = ++tablet.rowSize;
+    for (long time = 0; time < 100; time++){
+      int rowIndex=++tablet.rowSize;
       tablet.addTimestamp(rowIndex, time);
-      for (int s = 0; s < 3; s++) {
-        tablet.addValue(schemaList.get(s), rowIndex, (long) s);
+      for(int s=0;s<3;s++) {
+        tablet.addValue(schemaList.get(s),rowIndex, (long)s);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet, true);
@@ -284,17 +285,16 @@ public class SessionExample {
       int row1 = ++tablet1.rowSize;
       int row2 = ++tablet2.rowSize;
       int row3 = ++tablet3.rowSize;
-      tablet1.addTimestamp(row1, time);
-      tablet2.addTimestamp(row2, time);
-      tablet3.addTimestamp(row3, time);
+      tablet1.addTimestamp(row1,time);
+      tablet2.addTimestamp(row2,time);
+      tablet3.addTimestamp(row3,time);
       for (int i = 0; i < 3; i++) {
-        tablet1.addValue(schemaList.get(i), row1, (long) i);
-        tablet2.addValue(schemaList.get(i), row2, (long) i);
-        tablet3.addValue(schemaList.get(i), row3, (long) i);
+        tablet1.addValue(schemaList.get(i),row1, (long)i);
+        tablet2.addValue(schemaList.get(i),row2, (long)i);
+        tablet3.addValue(schemaList.get(i),row3, (long)i);
       }
       if (tablet1.rowSize == tablet1.getMaxRowNumber()) {
         session.insertTablets(tabletMap, true);
-
         tablet1.reset();
         tablet2.reset();
         tablet3.reset();
@@ -315,15 +315,15 @@ public class SessionExample {
     String path2 = "root.sg1.d1.s3";
     String path3 = "root.sg1.d1.s4";
     long deleteTime = 99;
-    /*  long delete=1598580397045;*/
+  /*  long delete=1598580397045;*/
     session.deleteData(path, deleteTime);
-    session.deleteData(path, 123556);
+    session.deleteData(path,123556);
     session.deleteData(path1, deleteTime);
-    session.deleteData(path1, 123556);
+    session.deleteData(path1,123556);
     session.deleteData(path2, deleteTime);
-    session.deleteData(path2, 123556);
+    session.deleteData(path2,123556);
     session.deleteData(path3, deleteTime);
-    session.deleteData(path3, 123556);
+    session.deleteData(path3,123556);
   }
 
   private static void deleteTimeseries()
@@ -337,7 +337,7 @@ public class SessionExample {
 
   private static void query() throws IoTDBConnectionException, StatementExecutionException {
     SessionDataSet dataSet;
-    dataSet = session.executeQueryStatement("select * from root.sg1.d1");
+    dataSet = session.executeQueryStatement("select * from root.sg1");
     System.out.println(dataSet.getColumnNames());
     dataSet.setFetchSize(1024); // default is 10000
     while (dataSet.hasNext()) {
@@ -350,7 +350,7 @@ public class SessionExample {
   private static void queryByIterator()
       throws IoTDBConnectionException, StatementExecutionException {
     SessionDataSet dataSet;
-    dataSet = session.executeQueryStatement("select * from root.sg1.d1");
+    dataSet = session.executeQueryStatement("select * from root.sg1");
     DataIterator iterator = dataSet.iterator();
     System.out.println(dataSet.getColumnNames());
     dataSet.setFetchSize(1024); // default is 10000

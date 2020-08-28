@@ -34,11 +34,14 @@ import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 /**
  * A tablet data of one device, the tablet contains multiple measurements of this device that share
  * the same time column.
- * <p>
+ *
  * for example:  device root.sg1.d1
- * <p>
- * time, m1, m2, m3 1,  1,  2,  3 2,  1,  2,  3 3,  1,  2,  3
- * <p>
+ *
+ * time, m1, m2, m3
+ *    1,  1,  2,  3
+ *    2,  1,  2,  3
+ *    3,  1,  2,  3
+ *
  * Notice: The tablet should not have empty cell
  */
 public class Tablet {
@@ -80,15 +83,15 @@ public class Tablet {
    * should be the same size).
    *
    * @param deviceId the name of the device specified to be written in
-   * @param schemas  the list of measurement schemas for creating the tablet, only measurementId and
-   *                 type take effects
+   * @param schemas  the list of measurement schemas for creating the tablet,
+   *                 only measurementId and type take effects
    */
   public Tablet(String deviceId, List<MeasurementSchema> schemas) {
     this(deviceId, schemas, DEFAULT_SIZE);
   }
 
-  public void addTimestamp(int rowIndex, long timestamp) {
-    timestamps[rowIndex - 1] = timestamp;
+  public void addTimestamp(int rowIndex,long timestamp){
+    timestamps[rowIndex-1]=timestamp;
   }
 
 /*  public void addValue(MeasurementSchema measurementSchema,int rowIndex,long value){
@@ -112,36 +115,42 @@ public class Tablet {
   }*/
 
 
-  public void addValue(MeasurementSchema measurementSchema, int rowIndex, Object value) {
+  public void addValue(MeasurementSchema measurementSchema,int rowIndex,Object value){
 
-    int indexOfValue = schemas.indexOf(measurementSchema);
-    if (measurementSchema.getType() == INT64) {
+    int indexOfValue=schemas.indexOf(measurementSchema);
+    if(measurementSchema.getType()==INT64) {
       long[] sensor = (long[]) values[indexOfValue];
-      sensor[rowIndex - 1] = (long) value;
-      values[indexOfValue] = sensor;
-    } else if (measurementSchema.getType() == INT32) {
+      sensor[rowIndex - 1] =(long)value;
+      values[indexOfValue]=sensor;
+    }
+    else if(measurementSchema.getType()==INT32){
       int[] sensor = (int[]) values[indexOfValue];
-      sensor[rowIndex - 1] = (int) value;
-      values[indexOfValue] = sensor;
-    } else if (measurementSchema.getType() == FLOAT) {
+      sensor[rowIndex - 1] =(int)value;
+      values[indexOfValue]=sensor;
+    }
+    else if(measurementSchema.getType()==FLOAT){
       float[] sensor = (float[]) values[indexOfValue];
-      sensor[rowIndex - 1] = (float) value;
-      values[indexOfValue] = sensor;
-    } else if (measurementSchema.getType() == DOUBLE) {
+      sensor[rowIndex - 1] =(float)value;
+      values[indexOfValue]=sensor;
+    }
+    else if(measurementSchema.getType()==DOUBLE){
       double[] sensor = (double[]) values[indexOfValue];
-      sensor[rowIndex - 1] = (double) value;
-      values[indexOfValue] = sensor;
-    } else if (measurementSchema.getType() == BOOLEAN) {
+      sensor[rowIndex - 1] =(double)value;
+      values[indexOfValue]=sensor;
+    }
+    else if(measurementSchema.getType()==BOOLEAN){
       boolean[] sensor = (boolean[]) values[indexOfValue];
-      sensor[rowIndex - 1] = (boolean) value;
-      values[indexOfValue] = sensor;
-    } else if (measurementSchema.getType() == TEXT) {
+      sensor[rowIndex - 1] =(boolean)value;
+      values[indexOfValue]=sensor;
+    }
+    else if(measurementSchema.getType()==TEXT){
       Binary[] sensor = (Binary[]) values[indexOfValue];
-      sensor[rowIndex - 1] = (Binary) value;
-      values[indexOfValue] = sensor;
-    } else {
+      sensor[rowIndex - 1] =(Binary)value;
+      values[indexOfValue]=sensor;
+    }
+    else {
       throw new UnSupportedDataTypeException(
-          String.format("Data type %s is not supported.", measurementSchema.getType()));
+            String.format("Data type %s is not supported.", measurementSchema.getType()));
     }
   }
 
@@ -151,8 +160,8 @@ public class Tablet {
    * directly for testing purposes. Tablet should normally always be default size.
    *
    * @param deviceId     the name of the device specified to be written in
-   * @param schemas      the list of measurement schemas for creating the row batch, only
-   *                     measurementId and type take effects
+   * @param schemas   the list of measurement schemas for creating the row
+   *                  batch, only measurementId and type take effects
    * @param maxRowNumber the maximum number of rows for this tablet
    */
   public Tablet(String deviceId, List<MeasurementSchema> schemas, int maxRowNumber) {

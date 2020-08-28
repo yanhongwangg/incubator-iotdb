@@ -112,7 +112,8 @@ public class IoTDBSessionIT {
   }
 
   @Test
-  public void testInsertByBlankStrAndInferType() throws IoTDBConnectionException, StatementExecutionException {
+  public void testInsertByBlankStrAndInferType()
+      throws IoTDBConnectionException, StatementExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
     session.open();
 
@@ -138,7 +139,8 @@ public class IoTDBSessionIT {
   }
 
   @Test
-  public void testInsertByStrAndInferType() throws IoTDBConnectionException, StatementExecutionException {
+  public void testInsertByStrAndInferType()
+      throws IoTDBConnectionException, StatementExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
     session.open();
 
@@ -174,7 +176,8 @@ public class IoTDBSessionIT {
   }
 
   @Test
-  public void testInsertByObjAndNotInferType() throws IoTDBConnectionException, StatementExecutionException {
+  public void testInsertByObjAndNotInferType()
+      throws IoTDBConnectionException, StatementExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
     session.open();
 
@@ -247,6 +250,8 @@ public class IoTDBSessionIT {
 
     queryForAlignByDevice();
     queryForAlignByDevice2();
+
+
   }
 
   // it's will output too much to travis, so ignore it
@@ -259,7 +264,7 @@ public class IoTDBSessionIT {
 
     createTimeseriesForTime();
 
-    insertTabletTestForTime("root.sg1.d1");
+
   }
 
   @Test
@@ -271,7 +276,6 @@ public class IoTDBSessionIT {
     session.setStorageGroup("root.sg1");
 
     createTimeseries();
-
     insertTabletTest2("root.sg1.d1");
     // flush
     session.executeNonQueryStatement("FLUSH");
@@ -329,7 +333,8 @@ public class IoTDBSessionIT {
 
     Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.s1"));
     Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.s2"));
-    MeasurementMNode mNode = (MeasurementMNode) MManager.getInstance().getNodeByPath("root.sg1.d1.s1");
+    MeasurementMNode mNode = (MeasurementMNode) MManager.getInstance()
+        .getNodeByPath("root.sg1.d1.s1");
     assertNull(mNode.getSchema().getProps());
 
   }
@@ -345,7 +350,6 @@ public class IoTDBSessionIT {
     String deviceId = "root.sg1.d1";
 
     createTimeseries();
-
 
     // test insert tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
@@ -572,7 +576,7 @@ public class IoTDBSessionIT {
   @Test
   public void TestSessionInterfacesWithDisabledWAL()
       throws StatementExecutionException, IoTDBConnectionException,
-          BatchExecutionException {
+      BatchExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
     try {
       session.open();
@@ -778,7 +782,7 @@ public class IoTDBSessionIT {
     types.add(TSDataType.INT64);
 
     for (long time = 0; time < 100; time++) {
-      session.insertRecord(deviceId, time, measurements, types,1L, 2L, 3L);
+      session.insertRecord(deviceId, time, measurements, types, 1L, 2L, 3L);
     }
   }
 
@@ -812,18 +816,14 @@ public class IoTDBSessionIT {
 
     Tablet tablet = new Tablet(deviceId, schemaList, 100);
 
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
     for (long time = 0; time < 100; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
+      int rowIndex = ++tablet.rowSize;
+      tablet.addTimestamp(rowIndex, time);
+      for (int s = 0; s < 3; s++) {
+        tablet.addValue(schemaList.get(s), rowIndex, (long) s);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
+        session.insertTablet(tablet, true);
         tablet.reset();
       }
     }
@@ -1087,18 +1087,14 @@ public class IoTDBSessionIT {
 
     Tablet tablet = new Tablet(deviceId, schemaList, 256);
 
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
     for (long time = 0; time < 1000; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
+      int rowIndex = ++tablet.rowSize;
+      tablet.addTimestamp(rowIndex, time);
+      for (int s = 0; s < 3; s++) {
+        tablet.addValue(schemaList.get(s), rowIndex, (long) s);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
+        session.insertTablet(tablet, true);
         tablet.reset();
       }
     }
@@ -1119,18 +1115,14 @@ public class IoTDBSessionIT {
 
     Tablet tablet = new Tablet(deviceId, schemaList, 200);
 
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
     for (long time = 500; time < 1500; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
+      int rowIndex = ++tablet.rowSize;
+      tablet.addTimestamp(rowIndex, time);
+      for (int s = 0; s < 3; s++) {
+        tablet.addValue(schemaList.get(s), rowIndex, (long) s);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
+        session.insertTablet(tablet, true);
         tablet.reset();
       }
     }
@@ -1141,9 +1133,9 @@ public class IoTDBSessionIT {
     }
   }
 
-  private void insertTabletTestForTime(String deviceId)
+  public void insertTabletTestForTime(String deviceId)
       throws IoTDBConnectionException, StatementExecutionException {
-
+    /* deviceId="root.sg1.d1";*/
     List<MeasurementSchema> schemaList = new ArrayList<>();
     schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
     schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));
@@ -1156,15 +1148,11 @@ public class IoTDBSessionIT {
 
     Tablet tablet = new Tablet(deviceId, schemaList, 1000);
 
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
     for (long time = begin; time < count + begin; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
+      int rowIndex = ++tablet.rowSize;
+      tablet.addTimestamp(rowIndex, time);
       for (int i = 0; i < 6; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
+        tablet.addValue(schemaList.get(i), rowIndex, (long) i);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet);
@@ -1176,6 +1164,15 @@ public class IoTDBSessionIT {
       session.insertTablet(tablet);
       tablet.reset();
     }
+    SessionDataSet dataSet;
+    dataSet = session.executeQueryStatement("select * from root.sg1.d1");
+    System.out.println(dataSet.getColumnNames());
+    dataSet.setFetchSize(1024); // default is 10000
+    while (dataSet.hasNext()) {
+      System.out.println(dataSet.next());
+    }
+
+    dataSet.closeOperationHandle();
 
   }
 

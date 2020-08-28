@@ -40,17 +40,17 @@ public class SessionExample {
   private static Session session;
 
   public static void main(String[] args)
-      throws IoTDBConnectionException, StatementExecutionException {
+      throws IoTDBConnectionException, StatementExecutionException, BatchExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
     session.open(false);
 
     try {
       session.setStorageGroup("root.sg1");
     } catch (StatementExecutionException e) {
-      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode())
+      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode()) {
         throw e;
+      }
     }
-
     createTimeseries();
     createMultiTimeseries();
     insertRecord();
@@ -153,7 +153,8 @@ public class SessionExample {
     }
   }
 
-  private static void insertStrRecord() throws IoTDBConnectionException, StatementExecutionException {
+  private static void insertStrRecord()
+      throws IoTDBConnectionException, StatementExecutionException {
     String deviceId = "root.sg1.d1";
     List<String> measurements = new ArrayList<>();
     measurements.add("s1");
@@ -224,17 +225,14 @@ public class SessionExample {
 
     session.insertRecords(deviceIds, timestamps, measurementsList, typesList, valuesList);
   }
+
   /**
    * insert the data of a device. For each timestamp, the number of measurements is the same.
-   *
+   * <p>
    * a Tablet example:
-   *
-   *      device1
-   * time s1, s2, s3
-   * 1,   1,  1,  1
-   * 2,   2,  2,  2
-   * 3,   3,  3,  3
-   *
+   * <p>
+   * device1 time s1, s2, s3 1,   1,  1,  1 2,   2,  2,  2 3,   3,  3,  3
+   * <p>
    * Users need to control the count of Tablet and write a batch when it reaches the maxBatchSize
    */
   private static void insertTablet() throws IoTDBConnectionException, StatementExecutionException {
@@ -247,15 +245,11 @@ public class SessionExample {
 
     Tablet tablet = new Tablet("root.sg1.d1", schemaList, 100);
 
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
     for (long time = 0; time < 100; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
+      int rowIndex = ++tablet.rowSize;
+      tablet.addTimestamp(rowIndex, time);
+      for (int s = 0; s < 3; s++) {
+        tablet.addValue(schemaList.get(s), rowIndex, (long) s);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet, true);
@@ -286,27 +280,17 @@ public class SessionExample {
     tabletMap.put("root.sg1.d2", tablet2);
     tabletMap.put("root.sg1.d3", tablet3);
 
-    long[] timestamps1 = tablet1.timestamps;
-    Object[] values1 = tablet1.values;
-    long[] timestamps2 = tablet2.timestamps;
-    Object[] values2 = tablet2.values;
-    long[] timestamps3 = tablet3.timestamps;
-    Object[] values3 = tablet3.values;
-
     for (long time = 0; time < 100; time++) {
-      int row1 = tablet1.rowSize++;
-      int row2 = tablet2.rowSize++;
-      int row3 = tablet3.rowSize++;
-      timestamps1[row1] = time;
-      timestamps2[row2] = time;
-      timestamps3[row3] = time;
+      int row1 = ++tablet1.rowSize;
+      int row2 = ++tablet2.rowSize;
+      int row3 = ++tablet3.rowSize;
+      tablet1.addTimestamp(row1, time);
+      tablet2.addTimestamp(row2, time);
+      tablet3.addTimestamp(row3, time);
       for (int i = 0; i < 3; i++) {
-        long[] sensor1 = (long[]) values1[i];
-        sensor1[row1] = i;
-        long[] sensor2 = (long[]) values2[i];
-        sensor2[row2] = i;
-        long[] sensor3 = (long[]) values3[i];
-        sensor3[row3] = i;
+        tablet1.addValue(schemaList.get(i), row1, (long) i);
+        tablet2.addValue(schemaList.get(i), row2, (long) i);
+        tablet3.addValue(schemaList.get(i), row3, (long) i);
       }
       if (tablet1.rowSize == tablet1.getMaxRowNumber()) {
         session.insertTablets(tabletMap, true);
@@ -327,8 +311,19 @@ public class SessionExample {
 
   private static void deleteData() throws IoTDBConnectionException, StatementExecutionException {
     String path = "root.sg1.d1.s1";
+    String path1 = "root.sg1.d1.s2";
+    String path2 = "root.sg1.d1.s3";
+    String path3 = "root.sg1.d1.s4";
     long deleteTime = 99;
+    /*  long delete=1598580397045;*/
     session.deleteData(path, deleteTime);
+    session.deleteData(path, 123556);
+    session.deleteData(path1, deleteTime);
+    session.deleteData(path1, 123556);
+    session.deleteData(path2, deleteTime);
+    session.deleteData(path2, 123556);
+    session.deleteData(path3, deleteTime);
+    session.deleteData(path3, 123556);
   }
 
   private static void deleteTimeseries()

@@ -40,7 +40,7 @@ public class SessionExample {
   private static Session session;
 
   public static void main(String[] args)
-      throws IoTDBConnectionException, StatementExecutionException, BatchExecutionException {
+      throws IoTDBConnectionException, StatementExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
     session.open(false);
 
@@ -50,6 +50,7 @@ public class SessionExample {
       if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode())
         throw e;
     }
+
     createTimeseries();
     createMultiTimeseries();
     insertRecord();
@@ -311,19 +312,8 @@ public class SessionExample {
 
   private static void deleteData() throws IoTDBConnectionException, StatementExecutionException {
     String path = "root.sg1.d1.s1";
-    String path1 = "root.sg1.d1.s2";
-    String path2 = "root.sg1.d1.s3";
-    String path3 = "root.sg1.d1.s4";
     long deleteTime = 99;
-  /*  long delete=1598580397045;*/
     session.deleteData(path, deleteTime);
-    session.deleteData(path,123556);
-    session.deleteData(path1, deleteTime);
-    session.deleteData(path1,123556);
-    session.deleteData(path2, deleteTime);
-    session.deleteData(path2,123556);
-    session.deleteData(path3, deleteTime);
-    session.deleteData(path3,123556);
   }
 
   private static void deleteTimeseries()
@@ -337,7 +327,7 @@ public class SessionExample {
 
   private static void query() throws IoTDBConnectionException, StatementExecutionException {
     SessionDataSet dataSet;
-    dataSet = session.executeQueryStatement("select * from root.sg1");
+    dataSet = session.executeQueryStatement("select * from root.sg1.d1");
     System.out.println(dataSet.getColumnNames());
     dataSet.setFetchSize(1024); // default is 10000
     while (dataSet.hasNext()) {
@@ -350,7 +340,7 @@ public class SessionExample {
   private static void queryByIterator()
       throws IoTDBConnectionException, StatementExecutionException {
     SessionDataSet dataSet;
-    dataSet = session.executeQueryStatement("select * from root.sg1");
+    dataSet = session.executeQueryStatement("select * from root.sg1.d1");
     DataIterator iterator = dataSet.iterator();
     System.out.println(dataSet.getColumnNames());
     dataSet.setFetchSize(1024); // default is 10000

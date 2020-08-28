@@ -247,8 +247,6 @@ public class IoTDBSessionIT {
 
     queryForAlignByDevice();
     queryForAlignByDevice2();
-
-
   }
 
   // it's will output too much to travis, so ignore it
@@ -261,7 +259,7 @@ public class IoTDBSessionIT {
 
     createTimeseriesForTime();
 
-
+    insertTabletTestForTime("root.sg1.d1");
   }
 
   @Test
@@ -273,6 +271,7 @@ public class IoTDBSessionIT {
     session.setStorageGroup("root.sg1");
 
     createTimeseries();
+
     insertTabletTest2("root.sg1.d1");
     // flush
     session.executeNonQueryStatement("FLUSH");
@@ -824,7 +823,6 @@ public class IoTDBSessionIT {
       }
     }
 
-
     if (tablet.rowSize != 0) {
       session.insertTablet(tablet);
       tablet.reset();
@@ -1130,9 +1128,9 @@ public class IoTDBSessionIT {
     }
   }
 
-  public void insertTabletTestForTime(String deviceId)
+  private void insertTabletTestForTime(String deviceId)
       throws IoTDBConnectionException, StatementExecutionException {
-   /* deviceId="root.sg1.d1";*/
+
     List<MeasurementSchema> schemaList = new ArrayList<>();
     schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
     schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));

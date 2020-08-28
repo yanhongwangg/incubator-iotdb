@@ -19,13 +19,8 @@
 package org.apache.iotdb.tsfile.write.record;
 
 import static org.apache.iotdb.tsfile.file.metadata.enums.TSDataType.*;
-/*import static org.apache.iotdb.tsfile.file.metadata.enums.TSDataType.INT32;
-import static org.apache.iotdb.tsfile.file.metadata.enums.TSDataType.INT64;
-import static org.apache.iotdb.tsfile.file.metadata.enums.TSDataType.TEXT;*/
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.utils.Binary;
@@ -43,6 +38,7 @@ import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
  *    3,  1,  2,  3
  *
  * Notice: The tablet should not have empty cell
+ *
  */
 public class Tablet {
 
@@ -66,8 +62,6 @@ public class Tablet {
    * each object is a primitive type array, which represents values of one measurement
    */
   public Object[] values;
-
-  //public Object[] sensor;
   /**
    * the number of rows to include in this tablet
    */
@@ -77,14 +71,13 @@ public class Tablet {
    */
   private int maxRowNumber;
 
-
   /**
-   * Return a tablet with default specified row number. This is the standard constructor (all Tablet
-   * should be the same size).
+   * Return a tablet with default specified row number. This is the standard
+   * constructor (all Tablet should be the same size).
    *
-   * @param deviceId the name of the device specified to be written in
-   * @param schemas  the list of measurement schemas for creating the tablet,
-   *                 only measurementId and type take effects
+   * @param deviceId   the name of the device specified to be written in
+   * @param timeseries the list of measurement schemas for creating the tablet,
+   *                   only measurementId and type take effects
    */
   public Tablet(String deviceId, List<MeasurementSchema> schemas) {
     this(deviceId, schemas, DEFAULT_SIZE);
@@ -93,27 +86,6 @@ public class Tablet {
   public void addTimestamp(int rowIndex,long timestamp){
     timestamps[rowIndex-1]=timestamp;
   }
-
-/*  public void addValue(MeasurementSchema measurementSchema,int rowIndex,long value){
-    System.out.println("`2222");
-    int indexOfValue=schemas.indexOf(measurementSchema);
-    long[] sensor = (long[]) values[indexOfValue];
-    sensor[rowIndex - 1] = value;
-    values[indexOfValue] = sensor;
-  }*/
-
-//  private void addValue(MeasurementSchema measurementSchema,int rowIndex,int value){
-//    System.out.println("`111111");
-//    int[] sensor1 = (int[]) values[indexOfValue];
-//  }
-
-  /*public void aa(MeasurementSchema measurementSchema,int rowIndex, Object sensor,Object value){
-    int indexOfValue=schemas.indexOf(measurementSchema);
-    sensor
-    values[indexOfValue] = sensor;
-    sensor[rowIndex-1]=value;
-  }*/
-
 
   public void addValue(MeasurementSchema measurementSchema,int rowIndex,Object value){
 
@@ -154,10 +126,10 @@ public class Tablet {
     }
   }
 
-
   /**
-   * Return a tablet with the specified number of rows (maxBatchSize). Only call this constructor
-   * directly for testing purposes. Tablet should normally always be default size.
+   * Return a tablet with the specified number of rows (maxBatchSize). Only
+   * call this constructor directly for testing purposes. Tablet should normally
+   * always be default size.
    *
    * @param deviceId     the name of the device specified to be written in
    * @param schemas   the list of measurement schemas for creating the row
@@ -195,32 +167,30 @@ public class Tablet {
     // create timestamp column
     timestamps = new long[maxRowNumber];
     values = new Object[schemas.size()];
-//    sensor=new Object[maxRowNumber];
     // create value columns
     for (int i = 0; i < schemas.size(); i++) {
       TSDataType dataType = schemas.get(i).getType();
       switch (dataType) {
-        case INT32:
-          values[i] = new int[maxRowNumber];
-          break;
-        case INT64:
-          values[i] = new long[maxRowNumber];
-          break;
-        case FLOAT:
-          values[i] = new float[maxRowNumber];
-          break;
-        case DOUBLE:
-          values[i] = new double[maxRowNumber];
-          break;
-        case BOOLEAN:
-          values[i] = new boolean[maxRowNumber];
-          break;
-        case TEXT:
-          values[i] = new Binary[maxRowNumber];
-          break;
-        default:
-          throw new UnSupportedDataTypeException(
-              String.format("Data type %s is not supported.", dataType));
+      case INT32:
+        values[i] = new int[maxRowNumber];
+        break;
+      case INT64:
+        values[i] = new long[maxRowNumber];
+        break;
+      case FLOAT:
+        values[i] = new float[maxRowNumber];
+        break;
+      case DOUBLE:
+        values[i] = new double[maxRowNumber];
+        break;
+      case BOOLEAN:
+        values[i] = new boolean[maxRowNumber];
+        break;
+      case TEXT:
+        values[i] = new Binary[maxRowNumber];
+        break;
+      default:
+        throw new UnSupportedDataTypeException(String.format("Data type %s is not supported.", dataType));
       }
     }
   }
@@ -239,30 +209,30 @@ public class Tablet {
     int valueOccupation = 0;
     for (int i = 0; i < schemas.size(); i++) {
       switch (schemas.get(i).getType()) {
-        case BOOLEAN:
-          valueOccupation += rowSize;
-          break;
-        case INT32:
-          valueOccupation += rowSize * 4;
-          break;
-        case INT64:
-          valueOccupation += rowSize * 8;
-          break;
-        case FLOAT:
-          valueOccupation += rowSize * 4;
-          break;
-        case DOUBLE:
-          valueOccupation += rowSize * 8;
-          break;
-        case TEXT:
-          valueOccupation += rowSize * 4;
-          for (Binary value : (Binary[]) values[i]) {
-            valueOccupation += value.getLength();
-          }
-          break;
-        default:
-          throw new UnSupportedDataTypeException(
-              String.format("Data type %s is not supported.", schemas.get(i).getType()));
+      case BOOLEAN:
+        valueOccupation += rowSize;
+        break;
+      case INT32:
+        valueOccupation += rowSize * 4;
+        break;
+      case INT64:
+        valueOccupation += rowSize * 8;
+        break;
+      case FLOAT:
+        valueOccupation += rowSize * 4;
+        break;
+      case DOUBLE:
+        valueOccupation += rowSize * 8;
+        break;
+      case TEXT:
+        valueOccupation += rowSize * 4;
+        for (Binary value : (Binary[]) values[i]) {
+          valueOccupation += value.getLength();
+        }
+        break;
+      default:
+        throw new UnSupportedDataTypeException(
+            String.format("Data type %s is not supported.", schemas.get(i).getType()));
       }
     }
     return valueOccupation;

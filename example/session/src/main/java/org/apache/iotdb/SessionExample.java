@@ -47,8 +47,9 @@ public class SessionExample {
     try {
       session.setStorageGroup("root.sg1");
     } catch (StatementExecutionException e) {
-      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode())
+      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode()) {
         throw e;
+      }
     }
 
     createTimeseries();
@@ -153,7 +154,8 @@ public class SessionExample {
     }
   }
 
-  private static void insertStrRecord() throws IoTDBConnectionException, StatementExecutionException {
+  private static void insertStrRecord()
+      throws IoTDBConnectionException, StatementExecutionException {
     String deviceId = "root.sg1.d1";
     List<String> measurements = new ArrayList<>();
     measurements.add("s1");
@@ -224,17 +226,14 @@ public class SessionExample {
 
     session.insertRecords(deviceIds, timestamps, measurementsList, typesList, valuesList);
   }
+
   /**
    * insert the data of a device. For each timestamp, the number of measurements is the same.
-   *
+   * <p>
    * a Tablet example:
-   *
-   *      device1
-   * time s1, s2, s3
-   * 1,   1,  1,  1
-   * 2,   2,  2,  2
-   * 3,   3,  3,  3
-   *
+   * <p>
+   * device1 time s1, s2, s3 1,   1,  1,  1 2,   2,  2,  2 3,   3,  3,  3
+   * <p>
    * Users need to control the count of Tablet and write a batch when it reaches the maxBatchSize
    */
   private static void insertTablet() throws IoTDBConnectionException, StatementExecutionException {
@@ -247,11 +246,11 @@ public class SessionExample {
 
     Tablet tablet = new Tablet("root.sg1.d1", schemaList, 100);
 
-    for (long time = 0; time < 100; time++){
-      int rowIndex=++tablet.rowSize;
+    for (long time = 0; time < 100; time++) {
+      int rowIndex = ++tablet.rowSize;
       tablet.addTimestamp(rowIndex, time);
-      for(int s=0;s<3;s++) {
-        tablet.addValue(schemaList.get(s),rowIndex, (long)s);
+      for (int s = 0; s < 3; s++) {
+        tablet.addValue(schemaList.get(s), rowIndex, (long) s);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet, true);
@@ -286,13 +285,13 @@ public class SessionExample {
       int row1 = ++tablet1.rowSize;
       int row2 = ++tablet2.rowSize;
       int row3 = ++tablet3.rowSize;
-      tablet1.addTimestamp(row1,time);
-      tablet2.addTimestamp(row2,time);
-      tablet3.addTimestamp(row3,time);
+      tablet1.addTimestamp(row1, time);
+      tablet2.addTimestamp(row2, time);
+      tablet3.addTimestamp(row3, time);
       for (int i = 0; i < 3; i++) {
-        tablet1.addValue(schemaList.get(i),row1, (long)i);
-        tablet2.addValue(schemaList.get(i),row2, (long)i);
-        tablet3.addValue(schemaList.get(i),row3, (long)i);
+        tablet1.addValue(schemaList.get(i), row1, (long) i);
+        tablet2.addValue(schemaList.get(i), row2, (long) i);
+        tablet3.addValue(schemaList.get(i), row3, (long) i);
       }
       if (tablet1.rowSize == tablet1.getMaxRowNumber()) {
         session.insertTablets(tabletMap, true);

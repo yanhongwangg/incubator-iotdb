@@ -613,7 +613,7 @@ public class IoTDBSessionIT {
 
     Tablet tablet = new Tablet(deviceId, schemaList, 100);
 
-    for (int time = 1; time <= 100; time++) {
+    for (int time = 0; time < 100; time++) {
       int rowIndex = time;
       tablet.addTimestamp(rowIndex, (long) time);
       for (int s = 0; s < 3; s++) {
@@ -813,7 +813,7 @@ public class IoTDBSessionIT {
     Tablet tablet = new Tablet(deviceId, schemaList, 100);
 
     for (long time = 0; time < 100; time++) {
-      int rowIndex = ++tablet.rowSize;
+      int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, time);
       for (int s = 0; s < 3; s++) {
         tablet.addValue(schemaList.get(s), rowIndex, (long) s);
@@ -1084,7 +1084,7 @@ public class IoTDBSessionIT {
     Tablet tablet = new Tablet(deviceId, schemaList, 256);
 
     for (long time = 0; time < 1000; time++) {
-      int rowIndex = ++tablet.rowSize;
+      int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, time);
       for (int s = 0; s < 3; s++) {
         tablet.addValue(schemaList.get(s), rowIndex, (long) s);
@@ -1112,7 +1112,7 @@ public class IoTDBSessionIT {
     Tablet tablet = new Tablet(deviceId, schemaList, 200);
 
     for (long time = 500; time < 1500; time++) {
-      int rowIndex = ++tablet.rowSize;
+      int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, time);
       for (int s = 0; s < 3; s++) {
         tablet.addValue(schemaList.get(s), rowIndex, (long) s);
@@ -1145,7 +1145,7 @@ public class IoTDBSessionIT {
     Tablet tablet = new Tablet(deviceId, schemaList, 1000);
 
     for (long time = begin; time < count + begin; time++) {
-      int rowIndex = ++tablet.rowSize;
+      int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, time);
       for (int i = 0; i < 6; i++) {
         tablet.addValue(schemaList.get(i), rowIndex, (long) i);

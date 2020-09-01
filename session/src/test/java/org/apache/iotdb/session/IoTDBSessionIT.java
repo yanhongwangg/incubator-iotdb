@@ -88,9 +88,8 @@ public class IoTDBSessionIT {
     createTimeseries();
     insertByStr();
 
-    // sql test
     insert_via_sql();
-    query3();
+    queryByDevice("root.sg1.d1");
 
     session.close();
 
@@ -226,13 +225,11 @@ public class IoTDBSessionIT {
     createTimeseries();
     insertInObject();
 
-    // sql test
     insert_via_sql();
-    query3();
+    queryByDevice("root.sg1.d1");
 
     session.close();
   }
-
 
   @Test
   public void testAlignByDevice() throws IoTDBConnectionException,
@@ -244,13 +241,13 @@ public class IoTDBSessionIT {
 
     createTimeseries();
 
-    insertTabletTest2("root.sg1.d1");
+    insertTabletTest("root.sg1.d1");
 
     queryForAlignByDevice();
-    queryForAlignByDevice2();
+
+    session.close();
   }
 
-  // it's will output too much to travis, so ignore it
   public void testTime()
       throws IoTDBConnectionException, StatementExecutionException, BatchExecutionException {
     session = new Session("127.0.0.1", 6667, "root", "root");
@@ -258,9 +255,11 @@ public class IoTDBSessionIT {
 
     session.setStorageGroup("root.sg1");
 
-    createTimeseriesForTime();
+    createTimeseries();
 
-    insertTabletTestForTime("root.sg1.d1");
+    insertTabletTest("root.sg1.d1");
+
+    session.close();
   }
 
   @Test
@@ -273,15 +272,16 @@ public class IoTDBSessionIT {
 
     createTimeseries();
 
-    insertTabletTest2("root.sg1.d1");
-    // flush
+    insertTabletTest("root.sg1.d1");
+
     session.executeNonQueryStatement("FLUSH");
     session.executeNonQueryStatement("FLUSH root.sg1");
     session.executeNonQueryStatement("MERGE");
     session.executeNonQueryStatement("FULL MERGE");
-    insertTabletTest3("root.sg1.d1");
 
-    queryForBatchSeqAndUnseq();
+    queryForBatch();
+
+    session.close();
   }
 
   @Test
@@ -294,9 +294,11 @@ public class IoTDBSessionIT {
 
     createTimeseries();
 
-    insertTabletTest2("root.sg1.d1");
+    insertTabletTest("root.sg1.d1");
 
     queryForBatch();
+
+    session.close();
   }
 
   @Test
@@ -333,6 +335,7 @@ public class IoTDBSessionIT {
     MeasurementMNode mNode = (MeasurementMNode) MManager.getInstance().getNodeByPath(new PartialPath("root.sg1.d1.s1"));
     assertNull(mNode.getSchema().getProps());
 
+    session.close();
   }
 
   @Test
@@ -347,8 +350,6 @@ public class IoTDBSessionIT {
 
     createTimeseries();
 
-
-    // test insert tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
     schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
     schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));
@@ -358,7 +359,6 @@ public class IoTDBSessionIT {
 
     session.testInsertTablet(tablet);
 
-    // test insert record
     List<String> measurements = new ArrayList<>();
     measurements.add("s1");
     measurements.add("s2");
@@ -371,7 +371,6 @@ public class IoTDBSessionIT {
       session.testInsertRecord(deviceId, time, measurements, values);
     }
 
-    // test insert records
     measurements = new ArrayList<>();
     measurements.add("s1");
     measurements.add("s2");
@@ -401,6 +400,14 @@ public class IoTDBSessionIT {
     }
 
     session.testInsertRecords(deviceIds, timestamps, measurementsList, valuesList);
+
+    SessionDataSet dataSet = session.executeQueryStatement("show timeseries root.sg1");
+    int count = 0;
+    while (dataSet.hasNext()) {
+      count++;
+    }
+    Assert.assertEquals(6, count);
+    session.close();
   }
 
   @Test
@@ -422,6 +429,13 @@ public class IoTDBSessionIT {
     session.setStorageGroup(storageGroup);
     createTimeseriesInChinese(storageGroup, devices);
     insertInChinese(storageGroup, devices);
+
+    SessionDataSet dataSet = session.executeQueryStatement("select * from root.存储组1");
+    int count = 0;
+    while (dataSet.hasNext()) {
+      count++;
+    }
+    Assert.assertEquals(10, count);
     session.deleteStorageGroup(storageGroup);
     session.close();
   }
@@ -435,32 +449,35 @@ public class IoTDBSessionIT {
     } catch (IoTDBConnectionException e) {
       e.printStackTrace();
     }
+    String standard =
+        "Time\n" + "root.sg1.d1.s1\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n"
+            + "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
+    String standardAfterDelete =
+        "Time\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n"
+            + "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
 
     session.setStorageGroup("root.sg1");
 
     createTimeseries();
 
-    insert();
+    insertInObjectList();
 
-    // sql test
     insert_via_sql();
 
-    query3();
+    queryByDevice("root.sg1.d1");
 
-//    insertTabletTest1();
     deleteData();
 
-    query();
+    queryAll(standard);
 
     deleteTimeseries();
 
-    query2();
+    queryAll(standardAfterDelete);
 
     insertRecords();
 
-    query4();
+    queryByDevice("root.sg1.d2");
 
-    // special characters
     session.createTimeseries("root.sg1.d1.1_2", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
     session.createTimeseries("root.sg1.d1.\"1.2.3\"", TSDataType.INT64, TSEncoding.RLE,
@@ -468,32 +485,38 @@ public class IoTDBSessionIT {
     session.createTimeseries("root.sg1.d1.\"1.2.4\"", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
 
+    Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.1_2"));
+    Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.\"1.2.3\""));
+    Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.\"1.2.4\""));
+
     session.setStorageGroup("root.1");
     session.createTimeseries("root.1.2.3", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
-
-    // Add another storage group to test the deletion of storage group
     session.setStorageGroup("root.sg2");
     session.createTimeseries("root.sg2.d1.s1", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
 
     deleteStorageGroupTest();
 
-    // set storage group but do not create timeseries
     session.setStorageGroup("root.sg3");
-    insertTabletTest1("root.sg3.d1");
+    insertTabletTest("root.sg3.d1");
 
-    // create timeseries but do not set storage group
     session.createTimeseries("root.sg4.d1.s1", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
     session.createTimeseries("root.sg4.d1.s2", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
     session.createTimeseries("root.sg4.d1.s3", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
-    insertTabletTest1("root.sg4.d1");
+    insertTabletTest("root.sg4.d1");
 
-    // do not set storage group and create timeseries
-    insertTabletTest1("root.sg5.d1");
+    insertTabletTest("root.sg5.d1");
+
+    SessionDataSet dataSet = session.executeQueryStatement("select * from root group by device");
+    int count = 0;
+    while (dataSet.hasNext()) {
+      count++;
+    }
+    Assert.assertEquals(300, count);
 
     session.close();
   }
@@ -507,6 +530,12 @@ public class IoTDBSessionIT {
     } catch (IoTDBConnectionException e) {
       e.printStackTrace();
     }
+    String standard =
+        "Time\n" + "root.sg1.d1.s1\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n"
+            + "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
+    String standardAfterDelete =
+        "Time\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n"
+            + "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
 
     session.setStorageGroup("root.sg1");
 
@@ -514,25 +543,22 @@ public class IoTDBSessionIT {
 
     insertByStr();
 
-    // sql test
     insert_via_sql();
 
-    query3();
+    queryByDevice("root.sg1.d1");
 
-//    insertTabletTest1();
     deleteData();
 
-    query();
+    queryAll(standard);
 
     deleteTimeseries();
 
-    query2();
+    queryAll(standardAfterDelete);
 
     insertRecordsByStr();
 
-    query4();
+    queryByDevice("root.sg1.d2");
 
-    // special characters
     session.createTimeseries("root.sg1.d1.1_2", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
     session.createTimeseries("root.sg1.d1.\"1.2.3\"", TSDataType.INT64, TSEncoding.RLE,
@@ -540,32 +566,39 @@ public class IoTDBSessionIT {
     session.createTimeseries("root.sg1.d1.\"1.2.4\"", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
 
+    Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.1_2"));
+    Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.\"1.2.3\""));
+    Assert.assertTrue(session.checkTimeseriesExists("root.sg1.d1.\"1.2.4\""));
+
     session.setStorageGroup("root.1");
     session.createTimeseries("root.1.2.3", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
 
-    // Add another storage group to test the deletion of storage group
     session.setStorageGroup("root.sg2");
     session.createTimeseries("root.sg2.d1.s1", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
 
     deleteStorageGroupTest();
 
-    // set storage group but do not create timeseries
     session.setStorageGroup("root.sg3");
-    insertTabletTest1("root.sg3.d1");
+    insertTabletTest("root.sg3.d1");
 
-    // create timeseries but do not set storage group
     session.createTimeseries("root.sg4.d1.s1", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
     session.createTimeseries("root.sg4.d1.s2", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
     session.createTimeseries("root.sg4.d1.s3", TSDataType.INT64, TSEncoding.RLE,
         CompressionType.SNAPPY);
-    insertTabletTest1("root.sg4.d1");
+    insertTabletTest("root.sg4.d1");
 
-    // do not set storage group and create timeseries
-    insertTabletTest1("root.sg5.d1");
+    insertTabletTest("root.sg5.d1");
+
+    SessionDataSet dataSet = session.executeQueryStatement("select * from root group by device");
+    int count = 0;
+    while (dataSet.hasNext()) {
+      count++;
+    }
+    Assert.assertEquals(300, count);
 
     session.close();
   }
@@ -588,7 +621,6 @@ public class IoTDBSessionIT {
     IoTDBDescriptor.getInstance().getConfig().setEnableWal(false);
     createTimeseries();
 
-    // test insert record
     List<String> measurements = new ArrayList<>();
     List<TSDataType> types = new ArrayList<>();
     measurements.add("s1");
@@ -605,7 +637,6 @@ public class IoTDBSessionIT {
       session.insertRecord(deviceId, time, measurements, types, values);
     }
 
-    // test insert tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
     schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
     schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));
@@ -635,30 +666,16 @@ public class IoTDBSessionIT {
     }
 
     session.insertTablet(tablet);
+
+    SessionDataSet dataSet = session.executeQueryStatement("select * from root.sg1.d1");
+    int count = 0;
+    while (dataSet.hasNext()) {
+      count++;
+    }
+    Assert.assertEquals(201, count);
+
     IoTDBDescriptor.getInstance().getConfig().setEnableWal(isEnableWAL);
     session.close();
-  }
-
-  private void createTimeseriesForTime()
-      throws StatementExecutionException, IoTDBConnectionException {
-    session.createTimeseries("root.sg1.d1.s1", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d1.s2", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d1.s3", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d1.s4", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d1.s5", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d1.s6", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d2.s1", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d2.s2", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
-    session.createTimeseries("root.sg1.d2.s3", TSDataType.INT64, TSEncoding.RLE,
-        CompressionType.SNAPPY);
   }
 
   private void createTimeseries() throws StatementExecutionException, IoTDBConnectionException {
@@ -794,7 +811,7 @@ public class IoTDBSessionIT {
     }
   }
 
-  private void insert() throws IoTDBConnectionException, StatementExecutionException {
+  private void insertInObjectList() throws IoTDBConnectionException, StatementExecutionException {
     String deviceId = "root.sg1.d1";
     List<String> measurements = new ArrayList<>();
     List<TSDataType> types = new ArrayList<>();
@@ -814,7 +831,7 @@ public class IoTDBSessionIT {
     }
   }
 
-  private void insertTabletTest1(String deviceId)
+  private void insertTabletTest(String deviceId)
       throws IoTDBConnectionException, StatementExecutionException {
 
     List<MeasurementSchema> schemaList = new ArrayList<>();
@@ -882,11 +899,8 @@ public class IoTDBSessionIT {
     session.deleteTimeseries("root.sg1.d1.s1");
   }
 
-  private void query() throws ClassNotFoundException, SQLException {
+  private void queryAll(String standard) throws ClassNotFoundException, SQLException {
     Class.forName(Config.JDBC_DRIVER_NAME);
-    String standard =
-        "Time\n" + "root.sg1.d1.s1\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n"
-            + "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
     try (Connection connection = DriverManager
         .getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
         Statement statement = connection.createStatement()) {
@@ -922,53 +936,8 @@ public class IoTDBSessionIT {
       }
       Assert.assertEquals("root.sg1.d1,\'11\',0,\'11\',", sb.toString());
     }
-    Assert.assertEquals(2000, count);
+    Assert.assertEquals(100, count);
     sessionDataSet.closeOperationHandle();
-  }
-
-  private void queryForAlignByDevice2()
-      throws IoTDBConnectionException, StatementExecutionException {
-    SessionDataSet sessionDataSet = session.executeQueryStatement(
-        "select '11', s1, '11', s5, s1, s5 from root.sg1.d1 align by device");
-    sessionDataSet.setFetchSize(1024);
-    int count = 0;
-    while (sessionDataSet.hasNext()) {
-      count++;
-      StringBuilder sb = new StringBuilder();
-      List<Field> fields = sessionDataSet.next().getFields();
-      for (Field f : fields) {
-        sb.append(f.getStringValue()).append(",");
-      }
-      Assert.assertEquals("root.sg1.d1,'11',0,'11',null,0,null,", sb.toString());
-    }
-    Assert.assertEquals(2000, count);
-    sessionDataSet.closeOperationHandle();
-  }
-
-
-  private void query2() throws ClassNotFoundException, SQLException {
-    Class.forName(Config.JDBC_DRIVER_NAME);
-    String standard =
-        "Time\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n"
-            + "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
-    try (Connection connection = DriverManager
-        .getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery("SELECT * FROM root");
-      final ResultSetMetaData metaData = resultSet.getMetaData();
-      final int colCount = metaData.getColumnCount();
-      StringBuilder resultStr = new StringBuilder();
-      for (int i = 0; i < colCount; i++) {
-        resultStr.append(metaData.getColumnLabel(i + 1)).append("\n");
-      }
-      while (resultSet.next()) {
-        for (int i = 1; i <= colCount; i++) {
-          resultStr.append(resultSet.getString(i)).append(",");
-        }
-        resultStr.append("\n");
-      }
-      Assert.assertEquals(resultStr.toString(), standard);
-    }
   }
 
   public void deleteStorageGroupTest() throws ClassNotFoundException, SQLException,
@@ -1011,25 +980,9 @@ public class IoTDBSessionIT {
     }
   }
 
-  private void query4() throws IoTDBConnectionException, StatementExecutionException {
-    SessionDataSet sessionDataSet = session.executeQueryStatement("select * from root.sg1.d2");
-    sessionDataSet.setFetchSize(1024);
-    int count = 0;
-    while (sessionDataSet.hasNext()) {
-      long index = 1;
-      count++;
-      for (Field f : sessionDataSet.next().getFields()) {
-        Assert.assertEquals(f.getLongV(), index);
-        index++;
-      }
-    }
-    Assert.assertEquals(500, count);
-    sessionDataSet.closeOperationHandle();
-  }
-
-
-  private void query3() throws IoTDBConnectionException, StatementExecutionException {
-    SessionDataSet sessionDataSet = session.executeQueryStatement("select * from root.sg1.d1");
+  private void queryByDevice(String deviceId)
+      throws IoTDBConnectionException, StatementExecutionException {
+    SessionDataSet sessionDataSet = session.executeQueryStatement("select * from " + deviceId);
     sessionDataSet.setFetchSize(1024);
     int count = 0;
     while (sessionDataSet.hasNext()) {
@@ -1040,7 +993,16 @@ public class IoTDBSessionIT {
         index++;
       }
     }
-    Assert.assertEquals(101, count);
+
+    switch (deviceId) {
+      case "root.sg1.d1":
+        Assert.assertEquals(101, count);
+        break;
+      case "root.sg1.d2":
+        Assert.assertEquals(500, count);
+        break;
+    }
+
     sessionDataSet.closeOperationHandle();
   }
 
@@ -1055,7 +1017,6 @@ public class IoTDBSessionIT {
     session = new Session("127.0.0.1", 6667, "root", "root");
     session.open();
 
-    //test set sg
     checkSetSG(session, "root.vehicle", true);
     checkSetSG(session, "root.123456", true);
     checkSetSG(session, "root._1234", true);
@@ -1070,7 +1031,6 @@ public class IoTDBSessionIT {
     checkSetSG(session, "root.-12345", false);
     checkSetSG(session, "root.a{12345}", false);
 
-    //test create timeseries
     checkCreateTimeseries(session, "root.vehicle.d0.s0", true);
     checkCreateTimeseries(session, "root.vehicle.1110.s0", true);
     checkCreateTimeseries(session, "root.vehicle.d0.1220", true);
@@ -1108,164 +1068,6 @@ public class IoTDBSessionIT {
     assertEquals(correctStatus, status);
   }
 
-  private void insertTabletTest2(String deviceId)
-      throws IoTDBConnectionException, StatementExecutionException {
-
-    List<MeasurementSchema> schemaList = new ArrayList<>();
-    schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s3", TSDataType.INT64, TSEncoding.RLE));
-
-    Tablet tablet = new Tablet(deviceId, schemaList, 256);
-
-    for (long time = 1000; time < 2000; time++) {
-      int rowIndex = tablet.rowSize++;
-      long value = 0;
-      tablet.addTimestamp(rowIndex, time);
-      for (int s = 0; s < 3; s++) {
-        tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
-        value++;
-      }
-      if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
-        tablet.reset();
-      }
-    }
-
-    if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
-      tablet.reset();
-    }
-
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
-    for (long time = 0; time < 1000; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
-      }
-      if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
-        tablet.reset();
-      }
-    }
-
-    if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
-      tablet.reset();
-    }
-  }
-
-  private void insertTabletTest3(String deviceId)
-      throws IoTDBConnectionException, StatementExecutionException {
-
-    List<MeasurementSchema> schemaList = new ArrayList<>();
-    schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s3", TSDataType.INT64, TSEncoding.RLE));
-
-    Tablet tablet = new Tablet(deviceId, schemaList, 200);
-
-    for (long time = 500; time < 1500; time++) {
-      int rowIndex = tablet.rowSize++;
-      long value = 0;
-      tablet.addTimestamp(rowIndex, time);
-      for (int s = 0; s < 3; s++) {
-        tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
-        value++;
-      }
-      if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
-        tablet.reset();
-      }
-    }
-
-    if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
-      tablet.reset();
-    }
-
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
-    for (long time = 500; time < 1500; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
-      }
-      if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
-        tablet.reset();
-      }
-    }
-
-    if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
-      tablet.reset();
-    }
-  }
-
-  private void insertTabletTestForTime(String deviceId)
-      throws IoTDBConnectionException, StatementExecutionException {
-
-    List<MeasurementSchema> schemaList = new ArrayList<>();
-    schemaList.add(new MeasurementSchema("s1", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s2", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s3", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s4", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s5", TSDataType.INT64, TSEncoding.RLE));
-    schemaList.add(new MeasurementSchema("s6", TSDataType.INT64, TSEncoding.RLE));
-    long count = 10000000;
-    long begin = 0;
-
-    Tablet tablet = new Tablet(deviceId, schemaList, 1000);
-
-    for (long time = begin; time < count + begin; time++) {
-      int rowIndex = tablet.rowSize++;
-      long value = 0;
-      tablet.addTimestamp(rowIndex, time);
-      for (int i = 0; i < 6; i++) {
-        tablet.addValue(schemaList.get(i).getMeasurementId(), rowIndex, value);
-        value++;
-      }
-      if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
-        tablet.reset();
-      }
-    }
-
-    if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
-      tablet.reset();
-    }
-
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
-
-    for (long time = begin; time < count + begin; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 6; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
-      }
-      if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet);
-        tablet.reset();
-      }
-    }
-
-    if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
-      tablet.reset();
-    }
-  }
-
   private void queryForBatch() throws ClassNotFoundException, SQLException {
     Class.forName(Config.JDBC_DRIVER_NAME);
     String standard =
@@ -1289,8 +1091,7 @@ public class IoTDBSessionIT {
         }
       }
       Assert.assertEquals(standard, resultStr.toString());
-      // d1 and d2 will align
-      Assert.assertEquals(14000, count);
+      Assert.assertEquals(700, count);
     }
   }
 
@@ -1329,37 +1130,7 @@ public class IoTDBSessionIT {
         }
       }
       Assert.assertEquals(standard, resultStr.toString());
-      // d1 and d2 will align
       Assert.assertEquals(7000, count);
     }
   }
-
-  private void queryForBatchSeqAndUnseq() throws ClassNotFoundException, SQLException {
-    Class.forName(Config.JDBC_DRIVER_NAME);
-    String standard =
-        "Time\n" + "root.sg1.d1.s1\n" + "root.sg1.d1.s2\n" + "root.sg1.d1.s3\n" +
-            "root.sg1.d2.s1\n" + "root.sg1.d2.s2\n" + "root.sg1.d2.s3\n";
-    try (Connection connection = DriverManager
-        .getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
-      ResultSet resultSet = statement.executeQuery("SELECT * FROM root");
-      final ResultSetMetaData metaData = resultSet.getMetaData();
-      final int colCount = metaData.getColumnCount();
-      StringBuilder resultStr = new StringBuilder();
-      for (int i = 0; i < colCount; i++) {
-        resultStr.append(metaData.getColumnLabel(i + 1)).append("\n");
-      }
-
-      int count = 0;
-      while (resultSet.next()) {
-        for (int i = 1; i <= colCount; i++) {
-          count++;
-        }
-      }
-      Assert.assertEquals(standard, resultStr.toString());
-      // d1 and d2 will align
-      Assert.assertEquals(14000, count);
-    }
-  }
-
 }

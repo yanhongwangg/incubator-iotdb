@@ -52,17 +52,17 @@ public class SessionExample {
         throw e;
     }
 
-    createTimeseries();
-    createMultiTimeseries();
-    insertRecord();
+  createTimeseries();
+    /*  createMultiTimeseries();
+    insertRecord();*/
     insertTablet();
-    insertTablets();
+   /* insertTablets();
     insertRecords();
-    nonQuery();
+    nonQuery();*/
     query();
-    queryByIterator();
+  /*  queryByIterator();*/
     deleteData();
-    deleteTimeseries();
+   /* deleteTimeseries();*/
     session.close();
   }
 
@@ -246,10 +246,10 @@ public class SessionExample {
     schemaList.add(new MeasurementSchema("s2", TSDataType.INT64));
     schemaList.add(new MeasurementSchema("s3", TSDataType.INT64));
 
-    Tablet tablet = new Tablet("root.sg1.d1", schemaList, 100);
+    Tablet tablet = new Tablet("root.sg1.d1", schemaList, 200);
 
     //Method 1 to add tablet data
-    long timestamp = System.currentTimeMillis();
+    /*long timestamp = System.currentTimeMillis();
 
     for (long row = 0; row < 100; row++) {
       int rowIndex = tablet.rowSize++;
@@ -268,7 +268,7 @@ public class SessionExample {
     if (tablet.rowSize != 0) {
       session.insertTablet(tablet);
       tablet.reset();
-    }
+    }*/
 
     //Method 2 to add tablet data
     long[] timestamps = tablet.timestamps;
@@ -288,7 +288,7 @@ public class SessionExample {
     }
 
     if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
+      session.testInsertTablet(tablet);
       tablet.reset();
     }
   }
@@ -397,6 +397,7 @@ public class SessionExample {
   }
 
   private static void query() throws IoTDBConnectionException, StatementExecutionException {
+    System.out.println("i am coming");
     SessionDataSet dataSet;
     dataSet = session.executeQueryStatement("select * from root.sg1.d1");
     System.out.println(dataSet.getColumnNames());

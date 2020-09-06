@@ -346,7 +346,7 @@ public class MManager {
         break;
       case MetadataOperationType.DELETE_STORAGE_GROUP:
         List<PartialPath> storageGroups = new ArrayList<>();
-        for(int i = 1; i <= args.length; i++) {
+        for (int i = 1; i <= args.length; i++) {
           storageGroups.add(new PartialPath(args[i]));
         }
         deleteStorageGroups(storageGroups);
@@ -548,7 +548,8 @@ public class MManager {
       throws MetadataException, IOException {
     lock.writeLock().lock();
     try {
-      Pair<PartialPath, MeasurementMNode> pair = mtree.deleteTimeseriesAndReturnEmptyStorageGroup(path);
+      Pair<PartialPath, MeasurementMNode> pair = mtree
+          .deleteTimeseriesAndReturnEmptyStorageGroup(path);
       removeFromTagInvertedIndex(pair.right);
       PartialPath storageGroupPath = pair.left;
 
@@ -724,11 +725,13 @@ public class MManager {
    * @param nodeLevel  the level can not be smaller than the level of the prefixPath
    * @return A List instance which stores all node at given level
    */
-  public List<PartialPath> getNodesList(PartialPath prefixPath, int nodeLevel) throws MetadataException {
+  public List<PartialPath> getNodesList(PartialPath prefixPath, int nodeLevel)
+      throws MetadataException {
     return getNodesList(prefixPath, nodeLevel, null);
   }
 
-  public List<PartialPath> getNodesList(PartialPath prefixPath, int nodeLevel, StorageGroupFilter filter)
+  public List<PartialPath> getNodesList(PartialPath prefixPath, int nodeLevel,
+      StorageGroupFilter filter)
       throws MetadataException {
     lock.readLock().lock();
     try {
@@ -767,6 +770,23 @@ public class MManager {
   }
 
   /**
+   * Get all storage group under given prefixPath.
+   *
+   * @param prefixPath a prefix of a full path. if the wildcard is not at the tail, then each
+   *                   wildcard can only match one level, otherwise it can match to the tail.
+   * @return A HashSet instance which stores devices paths with given prefixPath.
+   */
+  public List<PartialPath> getStorageGroupPaths(PartialPath prefixPath) throws MetadataException {
+    lock.readLock().lock();
+    try {
+      return mtree.getStorageGroupPaths(prefixPath);
+      /*return mtree.getStorageGroupByPath(prefixPath);*/
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  /**
    * Get all storage group MNodes
    */
   public List<StorageGroupMNode> getAllStorageGroupNodes() {
@@ -795,10 +815,10 @@ public class MManager {
   }
 
   /**
-   * Similar to method getAllTimeseriesPath(), but return Path with alias
-   * alias.
+   * Similar to method getAllTimeseriesPath(), but return Path with alias alias.
    */
-  public List<PartialPath> getAllTimeseriesPathWithAlias(PartialPath prefixPath) throws MetadataException {
+  public List<PartialPath> getAllTimeseriesPathWithAlias(PartialPath prefixPath)
+      throws MetadataException {
     lock.readLock().lock();
     try {
       return mtree.getAllTimeseriesPathWithAlias(prefixPath);
@@ -895,7 +915,8 @@ public class MManager {
             pair.left.putAll(pair.right);
             MeasurementSchema measurementSchema = leaf.getSchema();
             res.add(new ShowTimeSeriesResult(leaf.getFullPath(), leaf.getAlias(),
-                getStorageGroupPath(leaf.getPartialPath()).getFullPath(), measurementSchema.getType().toString(),
+                getStorageGroupPath(leaf.getPartialPath()).getFullPath(),
+                measurementSchema.getType().toString(),
                 measurementSchema.getEncodingType().toString(),
                 measurementSchema.getCompressor().toString(), pair.left));
             if (limit != 0) {
@@ -960,19 +981,22 @@ public class MManager {
         try {
           if (tagFileOffset < 0) {
             // no tags/attributes
-            res.add(new ShowTimeSeriesResult(ansString.left.getFullPath(), ansString.right[0], ansString.right[1], ansString.right[2],
+            res.add(new ShowTimeSeriesResult(ansString.left.getFullPath(), ansString.right[0],
+                ansString.right[1], ansString.right[2],
                 ansString.right[3], ansString.right[4], Collections.emptyMap()));
           } else {
             // has tags/attributes
             Pair<Map<String, String>, Map<String, String>> pair =
                 tagLogFile.read(config.getTagAttributeTotalSize(), tagFileOffset);
             pair.left.putAll(pair.right);
-            res.add(new ShowTimeSeriesResult(ansString.left.getFullPath(), ansString.right[0], ansString.right[1], ansString.right[2],
+            res.add(new ShowTimeSeriesResult(ansString.left.getFullPath(), ansString.right[0],
+                ansString.right[1], ansString.right[2],
                 ansString.right[3], ansString.right[4], pair.left));
           }
         } catch (IOException e) {
           throw new MetadataException(
-              "Something went wrong while deserialize tag info of " + ansString.left.getFullPath(), e);
+              "Something went wrong while deserialize tag info of " + ansString.left.getFullPath(),
+              e);
         }
       }
       return res;
@@ -1043,13 +1067,12 @@ public class MManager {
   }
 
   /**
-   * E.g., root.sg is storage group
-   * given [root, sg], return the MNode of root.sg
-   * given [root, sg, device], return the MNode of root.sg
-   * Get storage group node by path. If storage group is not set, StorageGroupNotSetException will
-   * be thrown
+   * E.g., root.sg is storage group given [root, sg], return the MNode of root.sg given [root, sg,
+   * device], return the MNode of root.sg Get storage group node by path. If storage group is not
+   * set, StorageGroupNotSetException will be thrown
    */
-  public StorageGroupMNode getStorageGroupNodeByStorageGroupPath(PartialPath path) throws MetadataException {
+  public StorageGroupMNode getStorageGroupNodeByStorageGroupPath(PartialPath path)
+      throws MetadataException {
     lock.readLock().lock();
     try {
       return mtree.getStorageGroupNodeByStorageGroupPath(path);
@@ -1266,7 +1289,8 @@ public class MManager {
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void upsertTagsAndAttributes(String alias, Map<String, String> tagsMap,
-      Map<String, String> attributesMap, PartialPath fullPath) throws MetadataException, IOException {
+      Map<String, String> attributesMap, PartialPath fullPath)
+      throws MetadataException, IOException {
     lock.writeLock().lock();
     try {
       MNode mNode = mtree.getNodeByPath(fullPath);

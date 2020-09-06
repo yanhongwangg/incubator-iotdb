@@ -237,9 +237,11 @@ public class MTree implements Serializable {
     }
   }
 
-  private void checkStorageGroup(String storageGroup) throws IllegalPathException{
-    if(!IoTDBConfig.STORAGE_GROUP_PATTERN.matcher(storageGroup).matches()) {
-      throw new IllegalPathException(String.format("The storage group name can only be characters, numbers and underscores. %s", storageGroup));
+  private void checkStorageGroup(String storageGroup) throws IllegalPathException {
+    if (!IoTDBConfig.STORAGE_GROUP_PATTERN.matcher(storageGroup).matches()) {
+      throw new IllegalPathException(String
+          .format("The storage group name can only be characters, numbers and underscores. %s",
+              storageGroup));
     }
   }
 
@@ -382,12 +384,12 @@ public class MTree implements Serializable {
   }
 
   /**
-   * E.g., root.sg is storage group
-   * given [root, sg], return the MNode of root.sg
-   * given [root, sg, device], throw exception
-   * Get storage group node, if the give path is not a storage group, throw exception
+   * E.g., root.sg is storage group given [root, sg], return the MNode of root.sg given [root, sg,
+   * device], throw exception Get storage group node, if the give path is not a storage group, throw
+   * exception
    */
-  StorageGroupMNode getStorageGroupNodeByStorageGroupPath(PartialPath path) throws MetadataException {
+  StorageGroupMNode getStorageGroupNodeByStorageGroupPath(PartialPath path)
+      throws MetadataException {
     MNode node = getNodeByPath(path);
     if (node instanceof StorageGroupMNode) {
       return (StorageGroupMNode) node;
@@ -397,10 +399,9 @@ public class MTree implements Serializable {
   }
 
   /**
-   * E.g., root.sg is storage group
-   * given [root, sg], return the MNode of root.sg
-   * given [root, sg, device], return the MNode of root.sg
-   * Get storage group node, the give path don't need to be storage group path.
+   * E.g., root.sg is storage group given [root, sg], return the MNode of root.sg given [root, sg,
+   * device], return the MNode of root.sg Get storage group node, the give path don't need to be
+   * storage group path.
    */
   StorageGroupMNode getStorageGroupNodeByPath(PartialPath path) throws MetadataException {
     String[] nodes = path.getNodes();
@@ -500,6 +501,54 @@ public class MTree implements Serializable {
       }
     }
     return res;
+  }
+
+  /**
+   * Get all storage group under give path
+   *
+   * @return a list contains all storage group names under give path
+   */
+  List<PartialPath> getStorageGroupPaths(PartialPath prefixPath) throws MetadataException {
+    String[] nodes = prefixPath.getNodes();
+    if (nodes.length == 0 || !nodes[0].equals(root.getName())) {
+      throw new IllegalPathException(prefixPath.getFullPath());
+    }
+    List<PartialPath> storageGroupPaths = new ArrayList<>();
+    findStorageGroupPaths(root, nodes, 1, "", storageGroupPaths);
+    return storageGroupPaths;
+  }
+
+  /**
+   * Traverse the MTree to match all storage group with prefix path.
+   *
+   * @param node              the current traversing node
+   * @param nodes             split the prefix path with '.'
+   * @param idx               the current index of array nodes
+   * @param parent            current parent path
+   * @param storageGroupPaths store all matched storage group names
+   */
+  private void findStorageGroupPaths(MNode node, String[] nodes, int idx, String parent,
+      List<PartialPath> storageGroupPaths) {
+    if (node instanceof StorageGroupMNode) {
+      storageGroupPaths.add(node.getPartialPath());
+      return;
+    }
+    String nodeReg = MetaUtils.getNodeRegByIdx(idx, nodes);
+    if (!(PATH_WILDCARD).equals(nodeReg)) {
+      if (node.hasChild(nodeReg)) {
+        findStorageGroupPaths(
+            node.getChild(nodeReg),
+            nodes,
+            idx + 1,
+            parent + node.getName() + PATH_SEPARATOR,
+            storageGroupPaths);
+      }
+    } else {
+      for (MNode child : node.getChildren().values()) {
+        findStorageGroupPaths(
+            child, nodes, idx + 1, parent + node.getName() + PATH_SEPARATOR, storageGroupPaths);
+      }
+    }
   }
 
   /**
@@ -683,7 +732,8 @@ public class MTree implements Serializable {
     findPath(root, nodes, 1, allMatchedNodes, false, true, queryContext);
 
     Stream<Pair<PartialPath, String[]>> sortedStream = allMatchedNodes.stream().sorted(
-        Comparator.comparingLong((Pair<PartialPath, String[]> p) -> Long.parseLong(p.right[6])).reversed()
+        Comparator.comparingLong((Pair<PartialPath, String[]> p) -> Long.parseLong(p.right[6]))
+            .reversed()
             .thenComparing((Pair<PartialPath, String[]> p) -> p.left));
 
     // no limit
@@ -700,7 +750,8 @@ public class MTree implements Serializable {
    *
    * <p>result: [name, alias, storage group, dataType, encoding, compression, offset]
    */
-  List<Pair<PartialPath, String[]>> getAllMeasurementSchema(ShowTimeSeriesPlan plan) throws MetadataException {
+  List<Pair<PartialPath, String[]>> getAllMeasurementSchema(ShowTimeSeriesPlan plan)
+      throws MetadataException {
     List<Pair<PartialPath, String[]>> res;
     String[] nodes = plan.getPath().getNodes();
     if (nodes.length == 0 || !nodes[0].equals(root.getName())) {
@@ -733,7 +784,8 @@ public class MTree implements Serializable {
    *                             dataType, encoding, compression, offset, lastTimeStamp]
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
-  private void findPath(MNode node, String[] nodes, int idx, List<Pair<PartialPath, String[]>> timeseriesSchemaList,
+  private void findPath(MNode node, String[] nodes, int idx,
+      List<Pair<PartialPath, String[]>> timeseriesSchemaList,
       boolean hasLimit, boolean needLast, QueryContext queryContext) throws MetadataException {
     if (node instanceof MeasurementMNode && nodes.length <= idx) {
       if (hasLimit) {

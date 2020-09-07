@@ -46,6 +46,8 @@ public abstract class AggregateResult {
 
   protected boolean hasResult;
 
+
+
   /**
    * construct.
    *

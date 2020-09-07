@@ -83,6 +83,7 @@ public class AvgAggrResult extends AggregateResult {
       if (dataInThisPage.currentTime() >= bound) {
         break;
       }
+
       updateAvg(seriesDataType, dataInThisPage.currentValue());
       dataInThisPage.next();
     }
@@ -99,7 +100,7 @@ public class AvgAggrResult extends AggregateResult {
     }
   }
 
-  private void updateAvg(TSDataType type, Object sumVal) throws IOException {
+  public void updateAvg(TSDataType type, Object sumVal) throws IOException {
     double val;
     switch (type) {
       case INT32:

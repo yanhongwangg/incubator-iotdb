@@ -151,8 +151,8 @@ public class LinearFill extends IFill {
     AggregateResult firstValueResult = new FirstValueAggrResult(dataType);
     aggregateResultList.add(minTimeResult);
     aggregateResultList.add(firstValueResult);
-    AggregationExecutor.aggregateOneSeries(
-        seriesPath, deviceMeasurements, context, afterFilter, dataType, aggregateResultList, null);
+    /*AggregationExecutor.aggregateOneSeries(
+        seriesPath, deviceMeasurements, context, afterFilter, dataType, aggregateResultList, null);*/
 
     if (minTimeResult.getResult() != null) {
       long timestamp = (long)(minTimeResult.getResult());

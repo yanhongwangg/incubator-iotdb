@@ -276,7 +276,7 @@ public class CMManager extends MManager {
       // TODO-Cluster: also pull alias?
       MeasurementMNode measurementMNode =
           new MeasurementMNode(null, schema.getMeasurementId(), schema, null);
-      cacheMeta(deviceId.concatNode(schema.getMeasurementId()), measurementMNode);
+      cacheMeta(new PartialPath(schema.getMeasurementId()), measurementMNode);
     }
     logger.debug("Pulled {}/{} schemas from remote", schemas.size(), measurementList.length);
   }

@@ -139,10 +139,7 @@ public class CompactionUtils {
       throws IOException, IllegalPathException {
     Pair<ChunkMetadata, Chunk> chunkPair =
         readByAppendMerge(
-            entry.getValue(),
-            modificationCache,
-            new PartialPath(device, entry.getKey()),
-            modifications);
+            entry.getValue(), modificationCache, new PartialPath(entry.getKey()), modifications);
     ChunkMetadata newChunkMetadata = chunkPair.left;
     Chunk newChunk = chunkPair.right;
     if (newChunkMetadata != null && newChunk != null) {
@@ -171,7 +168,7 @@ public class CompactionUtils {
         readerChunkMetadataMap,
         timeValuePairMap,
         modificationCache,
-        new PartialPath(device, entry.getKey()),
+        new PartialPath(entry.getKey()),
         modifications);
     boolean isChunkMetadataEmpty = true;
     for (List<ChunkMetadata> chunkMetadataList : readerChunkMetadataMap.values()) {
@@ -187,10 +184,12 @@ public class CompactionUtils {
     try {
       chunkWriter =
           new ChunkWriterImpl(
-              IoTDB.metaManager.getSeriesSchema(new PartialPath(device), entry.getKey()), true);
+              IoTDB.metaManager.getSeriesSchema(
+                  new PartialPath(device), new PartialPath(entry.getKey()).getMeasurement()),
+              true);
     } catch (MetadataException e) {
       // this may caused in IT by restart
-      logger.error("{} get schema {} error,skip this sensor", device, entry.getKey());
+      logger.error("{} get schema {} error,skip this sensor", device, entry.getKey(), e);
       return;
     }
     for (TimeValuePair timeValuePair : timeValuePairMap.values()) {
